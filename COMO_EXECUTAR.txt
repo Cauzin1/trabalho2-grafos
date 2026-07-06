@@ -1,0 +1,51 @@
+COMO EXECUTAR - Trabalho 2 DCC059 - CMSTP (Tema C)
+==================================================
+
+Ambiente: Linux com g++ (padrao C++17).
+
+1) COMPILAR
+   make
+
+   Gera o executavel "cmstp". Para limpar: make clean
+
+2) EXECUTAR
+   Forma geral:
+     ./cmstp -i <instancia> -q <capacidade> -a <algoritmo> [opcoes]
+
+   Parametros obrigatorios:
+     -i  arquivo da instancia
+     -q  capacidade Q
+     -a  guloso | randomizado | reativo
+
+   Opcoes:
+     -al  alpha do randomizado          (padrao 0.3)
+     -it  numero de iteracoes           (padrao 30 no randomizado, 300 no reativo)
+     -b   tamanho do bloco (reativo)    (padrao 30)
+     -as  lista de alphas do reativo    (ex: 0.1,0.2,0.3)
+     -s   semente da randomizacao
+     -o   arquivo de saida da solucao
+     -c   arquivo csv de resultados     (padrao resultados.csv)
+
+3) EXEMPLOS
+
+   Guloso:
+     ./cmstp -i instancias/exemplo.txt -q 5 -a guloso
+
+   Guloso randomizado (alpha 0.2, 100 iteracoes, semente fixa):
+     ./cmstp -i instancias/exemplo.txt -q 5 -a randomizado -al 0.2 -it 100 -s 12345
+
+   Guloso randomizado reativo (300 iteracoes, blocos de 30):
+     ./cmstp -i instancias/exemplo.txt -q 5 -a reativo -as 0.1,0.2,0.3 -it 300 -b 30
+
+   Gravar a solucao em arquivo:
+     ./cmstp -i instancias/exemplo.txt -q 5 -a guloso -o solucao.txt
+
+4) OBSERVACOES
+   - A semente e impressa na tela; passe-a com -s para repetir um teste.
+   - Cada execucao anexa uma linha em resultados.csv (cabecalho criado
+     automaticamente na primeira vez).
+   - A solucao gravada inclui uma lista de arestas "u v" que pode ser colada
+     em http://csacademy.com/app/graph-editor/ para visualizacao.
+   - As instancias classicas (tc, te, td, cm) estao na OR-Library:
+     http://people.brunel.ac.uk/~mastjjb/jeb/orlib/capmstinfo.html
+     O formato de leitura esta descrito no README (secao 5).
