@@ -2,6 +2,7 @@
 
 Trabalho 2 — DCC059 (Teoria dos Grafos) — UFJF
 Tema **C: Capacitated Minimum Spanning Tree Problem**.
+Alunos: Thomás Causin, Caio Cunha, Igor Reis
 
 Implementação em C++ de três heurísticas construtivas para o CMSTP: um algoritmo
 guloso, um guloso randomizado (GRASP) e um guloso randomizado reativo.
