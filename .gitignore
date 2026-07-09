@@ -1,0 +1,16 @@
+# Binarios compilados (recompilar com make / compilar.ps1)
+cmstp
+cmstp.exe
+*.exe
+*.o
+
+# Saidas geradas em tempo de execucao
+resultados*.csv
+solucao*.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# Claude Code
+.claude/

@@ -131,7 +131,31 @@ make clean
 
 ## 5. Formato das instâncias
 
-Arquivo texto contendo **apenas números**:
+O leitor (`Grafo::lerInstancia`) reconhece **dois formatos automaticamente**,
+decidindo pelo primeiro token do arquivo (número → simples; texto → OR-Library).
+
+### 5.1. Formato nativo da OR-Library (recomendado)
+
+As instâncias clássicas do CMSTP (`tc`, `te`, `td`, `cm`) estão na OR-Library:
+<http://people.brunel.ac.uk/~mastjjb/jeb/orlib/capmstinfo.html>
+(arquivos `capmst1.txt` = tc/te; `capmst2.txt` = cm). O código **lê esses
+arquivos diretamente**, sem conversão. Características tratadas:
+
+- cada arquivo traz **várias instâncias emendadas**; use `-n, --nome` para
+  escolher qual ler (ex.: `-n tc80-1.txt`, `-n cm50r1.dat`);
+- a matriz de custos é **quadrada e inclui o depósito como último nó** (a
+  dimensão é inferida automaticamente, valendo tanto para `(n+1)×(n+1)` das `tc`
+  quanto para `N×N` das `cm`). Ao ler, o depósito é **remapeado para o índice 0**;
+- a **diagonal** (`0` ou `1000`, conforme o arquivo) é ignorada;
+- nas `cm`, as **demandas** vêm num bloco separado cujo rótulo começa por `priz`
+  e são associadas automaticamente; nas demais, as demandas são **unitárias**.
+
+Em `instancias/` já estão os arquivos `capmst1.txt` e `capmst2.txt` baixados.
+
+### 5.2. Formato simples (próprio)
+
+Também aceito, útil para instâncias pequenas de teste. Arquivo texto com
+**apenas números**:
 
 ```
 n                         (número de vértices, incluindo a raiz)
@@ -140,21 +164,15 @@ n                         (número de vértices, incluindo a raiz)
 ```
 
 - O vértice `0` é a raiz; sua demanda é sempre tratada como `0`.
-- Se as demandas **não** forem informadas, todas as demandas dos terminais são
-  assumidas como **unitárias** (caso das instâncias `tc`, `te`, `td`).
-- Se forem informadas, permite demandas **não unitárias** (caso das `cm`).
-- A capacidade `Q` **não** faz parte do arquivo: ela é passada na linha de
-  comando (`-q`), pois nas instâncias da literatura o mesmo grafo é testado com
-  diferentes capacidades.
+- Sem demandas → **unitárias**; com demandas → **não unitárias**.
 
-As instâncias clássicas do CMSTP (`tc`, `te`, `td`, `cm`) estão na OR-Library:
-<http://people.brunel.ac.uk/~mastjjb/jeb/orlib/capmstinfo.html>. Caso os arquivos
-baixados estejam em um layout diferente do descrito acima, basta convertê-los
-para este formato (ou ajustar `Grafo::lerInstancia`, que concentra toda a
-leitura).
+Em `instancias/` há dois exemplos nesse formato: `exemplo.txt` (unitária) e
+`exemplo_nao_unitario.txt` (não unitária).
 
-Em `instancias/` há dois exemplos prontos: `exemplo.txt` (demanda unitária) e
-`exemplo_nao_unitario.txt` (demandas não unitárias no fim do arquivo).
+### 5.3. Capacidade
+
+A capacidade `Q` **não** faz parte de nenhum dos formatos: é passada na linha de
+comando (`-q`), pois na literatura o mesmo grafo é testado com diferentes `Q`.
 
 ---
 
@@ -169,6 +187,7 @@ Forma geral:
 | Opção | Descrição |
 |-------|-----------|
 | `-i`, `--instancia`  | arquivo da instância (obrigatório) |
+| `-n`, `--nome`       | nome da instância dentro de um arquivo OR-Library com várias (ex.: `tc80-1.txt`) |
 | `-q`, `--capacidade` | capacidade `Q` (obrigatório) |
 | `-a`, `--algoritmo`  | `guloso`, `randomizado` ou `reativo` (obrigatório) |
 | `-al`, `--alpha`     | `α` do randomizado (padrão `0.3`) |
@@ -182,15 +201,19 @@ Forma geral:
 Exemplos:
 
 ```bash
-# Guloso
+# Guloso (exemplo simples)
 ./cmstp -i instancias/exemplo.txt -q 5 -a guloso
 
-# Randomizado (alpha 0.2, 100 iterações, semente fixa)
-./cmstp -i instancias/exemplo.txt -q 5 -a randomizado -al 0.2 -it 100 -s 12345
+# Instância real da OR-Library (escolhendo pelo nome)
+./cmstp -i instancias/capmst1.txt -n tc80-1.txt -q 5 -a guloso
+./cmstp -i instancias/capmst2.txt -n cm50r1.dat -q 200 -a reativo -it 300 -b 30
 
-# Reativo (conjunto de alphas próprio, 300 iterações, blocos de 30)
-./cmstp -i instancias/exemplo.txt -q 5 -a reativo -as 0.1,0.2,0.3 -it 300 -b 30
+# Randomizado (alpha 0.2, 100 iterações, semente fixa)
+./cmstp -i instancias/capmst1.txt -n te80-1.txt -q 5 -a randomizado -al 0.2 -it 100 -s 12345
 ```
+
+> Sem `-n`, se o arquivo tiver várias instâncias, o programa lista os nomes
+> disponíveis e pede que você escolha uma.
 
 ### Semente
 A semente de randomização é gerada **uma única vez** (a partir de data/hora) e
@@ -221,15 +244,23 @@ De acordo com a especificação:
   50 iterações;
 - escolher **três valores de `α`** para os testes do randomizado.
 
-Como cada execução anexa uma linha ao CSV, basta rodar o conjunto de testes e
-consolidar o arquivo. Um laço simples de shell ajuda:
+Para automatizar tudo, use o script pronto em `scripts/`:
 
 ```bash
-for s in 1 2 3 4 5 6 7 8 9 10; do
-  ./cmstp -i instancias/exemplo.txt -q 5 -a randomizado -al 0.2 -it 30 -s $s
-done
+make                                   # compila ./cmstp
+python3 scripts/experimentos.py        # roda a bateria completa
+# ou um subconjunto:
+python3 scripts/experimentos.py --grupos tc80,cm50 --algos guloso,reativo
 ```
 
-As tabelas do relatório (desvio percentual da melhor solução, desvio da média das
-10 execuções e tempo médio) são calculadas a partir desses valores comparados à
-melhor solução conhecida de cada instância.
+Ele roda cada algoritmo **10 vezes** por instância (sementes diferentes),
+compara com as melhores soluções conhecidas (`scripts/melhores_conhecidas.py`,
+extraídas do artigo do Tema C) e gera:
+
+- `resultados_detalhado.csv` — uma linha por instância/Q/algoritmo;
+- `resultados_tabelas.csv` — as **3 tabelas** exigidas (desvio da melhor, desvio
+  da média e tempo médio), prontas para colar na planilha do Classroom.
+
+> No Windows, se o `./cmstp` reclamar de biblioteca, compile estático
+> (`g++ -std=c++17 -O2 -static -o cmstp.exe src/*.cpp`) e rode com
+> `--bin ./cmstp.exe`.

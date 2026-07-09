@@ -7,9 +7,8 @@
 
 #include "Grafo.h"
 
-// Arvore geradora enraizada representada por um vetor de pais:
-// pai[v] indica o predecessor de v no caminho ate a raiz. A raiz aponta
-// para si mesma. Cada subarvore pendurada na raiz e uma s-tree.
+// Arvore enraizada como vetor de pais (pai[v] = predecessor de v; a raiz aponta
+// para si mesma). Cada subarvore pendurada na raiz e uma s-tree.
 class Solucao {
 public:
     Solucao();

@@ -18,6 +18,8 @@ Ambiente: Linux com g++ (padrao C++17).
      -a  guloso | randomizado | reativo
 
    Opcoes:
+     -n   nome da instancia dentro de um arquivo OR-Library com varias
+          emendadas (ex: tc80-1.txt, cm50r1.dat)
      -al  alpha do randomizado          (padrao 0.3)
      -it  numero de iteracoes           (padrao 30 no randomizado, 300 no reativo)
      -b   tamanho do bloco (reativo)    (padrao 30)
@@ -28,8 +30,12 @@ Ambiente: Linux com g++ (padrao C++17).
 
 3) EXEMPLOS
 
-   Guloso:
+   Guloso (exemplo simples):
      ./cmstp -i instancias/exemplo.txt -q 5 -a guloso
+
+   Instancia real da OR-Library (escolhendo pelo nome):
+     ./cmstp -i instancias/capmst1.txt -n tc80-1.txt -q 5 -a guloso
+     ./cmstp -i instancias/capmst2.txt -n cm50r1.dat -q 200 -a reativo -it 300
 
    Guloso randomizado (alpha 0.2, 100 iteracoes, semente fixa):
      ./cmstp -i instancias/exemplo.txt -q 5 -a randomizado -al 0.2 -it 100 -s 12345
@@ -48,4 +54,6 @@ Ambiente: Linux com g++ (padrao C++17).
      em http://csacademy.com/app/graph-editor/ para visualizacao.
    - As instancias classicas (tc, te, td, cm) estao na OR-Library:
      http://people.brunel.ac.uk/~mastjjb/jeb/orlib/capmstinfo.html
-     O formato de leitura esta descrito no README (secao 5).
+     Os arquivos capmst1.txt (tc/te) e capmst2.txt (cm) ja estao em
+     instancias/ e sao lidos diretamente pelo programa (use -n para
+     escolher a instancia). O formato esta descrito no README (secao 5).

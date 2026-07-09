@@ -17,6 +17,7 @@ namespace {
 
 struct Config {
     std::string instancia;
+    std::string nome;
     std::string algoritmo;
     std::string saida;
     std::string csv = "resultados.csv";
@@ -38,6 +39,8 @@ void uso(const char* prog) {
         "  reativo                GRASP reativo (usa -alphas, -iter e -bloco)\n\n"
         "Opcoes:\n"
         "  -i,  --instancia  <arq>    arquivo da instancia\n"
+        "  -n,  --nome       <nome>   instancia a ler dentro de um arquivo OR-Library\n"
+        "                             com varias emendadas (ex: tc80-1.txt, cm50r1.dat)\n"
         "  -q,  --capacidade <Q>      capacidade Q das sub-arvores\n"
         "  -a,  --algoritmo  <nome>   guloso | randomizado | reativo\n"
         "  -al, --alpha      <a>      alpha do randomizado (padrao 0.3)\n"
@@ -70,6 +73,7 @@ bool parseArgs(int argc, char** argv, Config& cfg) {
             return argv[++i];
         };
         if (a == "-i" || a == "--instancia") cfg.instancia = prox("instancia");
+        else if (a == "-n" || a == "--nome") cfg.nome = prox("nome");
         else if (a == "-q" || a == "--capacidade") cfg.capacidade = std::stod(prox("capacidade"));
         else if (a == "-a" || a == "--algoritmo") cfg.algoritmo = prox("algoritmo");
         else if (a == "-al" || a == "--alpha") cfg.alpha = std::stod(prox("alpha"));
@@ -140,7 +144,7 @@ int main(int argc, char** argv) {
     }
 
     Grafo g;
-    if (!g.lerInstancia(cfg.instancia)) return 1;
+    if (!g.lerInstancia(cfg.instancia, cfg.nome)) return 1;
     g.setCapacidade(cfg.capacidade);
 
     if (g.maiorDemanda() > cfg.capacidade + 1e-9) {

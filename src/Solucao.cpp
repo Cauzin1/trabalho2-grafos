@@ -21,8 +21,7 @@ int Solucao::numeroSubarvores() const {
     return total;
 }
 
-// Sobe de cada vertice ate a sub-raiz (filho direto da raiz) e acumula a
-// demanda por componente. A solucao e viavel se nenhuma componente excede Q.
+// Viavel se nenhuma s-tree (soma de demandas ate a sub-raiz) excede Q.
 bool Solucao::viavel(const Grafo& g) const {
     std::map<int, double> demandaPorSubarvore;
     for (int v = 0; v < n; ++v) {
@@ -45,7 +44,7 @@ void Solucao::imprimir(std::ostream& os, const Grafo& g) const {
         if (v != raiz) os << "  " << paiDe[v] << " -> " << v << "\n";
 }
 
-// Uma aresta por linha (u v), formato aceito pelo editor do csacademy.
+// Uma aresta por linha (u v), formato do editor csacademy.
 void Solucao::imprimirArestas(std::ostream& os) const {
     for (int v = 0; v < n; ++v)
         if (v != raiz) os << paiDe[v] << " " << v << "\n";

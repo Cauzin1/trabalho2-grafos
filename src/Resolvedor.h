@@ -7,9 +7,8 @@
 #include "Grafo.h"
 #include "Solucao.h"
 
-// Reune as tres heuristicas construtivas para o CMSTP. Todas partem da mesma
-// construcao no estilo Esau-Williams; o parametro alpha controla a
-// aleatorizacao (GRASP).
+// As tres heuristicas construtivas (Esau-Williams); alpha controla a
+// aleatorizacao do GRASP.
 class Resolvedor {
 public:
     explicit Resolvedor(const Grafo& grafo) : g(grafo) {}
@@ -22,8 +21,7 @@ public:
 private:
     const Grafo& g;
 
-    // Constroi uma solucao. Com rng == nullptr a escolha e sempre a melhor
-    // (guloso puro); caso contrario usa lista restrita de candidatos (RCL).
+    // Constroi uma solucao; rng == nullptr => guloso puro, senao usa RCL.
     Solucao construcao(double alpha, std::mt19937* rng) const;
 };
 

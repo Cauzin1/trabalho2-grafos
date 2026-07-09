@@ -12,10 +12,8 @@ constexpr double EPS = 1e-9;
 constexpr double DELTA = 10.0;  // sensibilidade da atualizacao reativa
 }  // namespace
 
-// Nucleo da construcao. Comeca com todo terminal ligado direto a raiz e vai
-// unindo componentes enquanto houver ganho (economia de custo) e a capacidade
-// permitir. A economia de unir i a j e: custo do gate da componente de i ate a
-// raiz menos o custo da aresta (i, j).
+// Esau-Williams: parte de todos ligados a raiz e funde componentes pela maior
+// economia (gate da componente de i menos custo da aresta i-j) sem violar Q.
 Solucao Resolvedor::construcao(double alpha, std::mt19937* rng) const {
     const int n = g.getNumVertices();
     const int raiz = g.getRaiz();
@@ -116,8 +114,7 @@ Solucao Resolvedor::construcao(double alpha, std::mt19937* rng) const {
         gateNo[cj] = novoGateNo;
     }
 
-    // Monta a arvore: arestas internas + ligacao de cada componente (pelo seu
-    // gate) ate a raiz. Depois orienta tudo com uma BFS a partir da raiz.
+    // Monta a arvore (arestas internas + gates) e orienta com BFS da raiz.
     std::vector<std::vector<int>> adj(n);
     for (const auto& e : arestasInternas) {
         adj[e.first].push_back(e.second);
@@ -172,9 +169,8 @@ Solucao Resolvedor::randomizado(double alpha, int iteracoes, std::mt19937& rng) 
     return melhor;
 }
 
-// GRASP reativo: um conjunto de valores de alpha compete entre si. A cada bloco
-// de iteracoes as probabilidades sao reajustadas favorecendo os alphas que
-// vem produzindo solucoes de menor custo medio.
+// GRASP reativo: reajusta as probabilidades dos alphas a cada bloco, favorecendo
+// os de menor custo medio (Prais & Ribeiro).
 Solucao Resolvedor::reativo(const std::vector<double>& alphas, int iteracoes,
                             int tamBloco, std::mt19937& rng,
                             double& melhorAlpha) const {

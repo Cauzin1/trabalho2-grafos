@@ -4,14 +4,13 @@
 #include <string>
 #include <vector>
 
-// Grafo nao direcionado, ponderado nas arestas (custos) e nos vertices (demandas).
-// A instancia do CMSTP e um grafo completo, entao a estrutura interna e uma
-// matriz de custos. O vertice de indice 0 e a raiz/deposito.
+// Grafo completo ponderado nas arestas e nos vertices; vertice 0 e a raiz.
 class Grafo {
 public:
     Grafo();
 
-    bool lerInstancia(const std::string& caminho);
+    // Le a instancia do arquivo; 'nome' seleciona uma dentre varias emendadas.
+    bool lerInstancia(const std::string& caminho, const std::string& nome = "");
 
     int getNumVertices() const { return n; }
     int getRaiz() const { return raiz; }
@@ -25,6 +24,10 @@ public:
     bool temDemandasNaoUnitarias() const { return naoUnitarias; }
 
 private:
+    bool lerFormatoSimples(const std::vector<std::string>& toks);
+    bool lerFormatoOrLib(const std::vector<std::string>& toks,
+                         const std::string& nome);
+
     int n;
     int raiz;
     double Q;
