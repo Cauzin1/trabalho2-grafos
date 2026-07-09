@@ -25,7 +25,7 @@ public:
 
     void imprimir(std::ostream& os, const Grafo& g) const;
     void imprimirArestas(std::ostream& os) const;
-    bool salvar(const std::string& caminho, const Grafo& g) const;
+    bool salvar(const std::string& caminho) const;
 
 private:
     int n;

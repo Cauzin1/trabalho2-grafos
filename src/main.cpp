@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
               << tempo << "\n";
 
     if (!cfg.saida.empty()) {
-        if (sol.salvar(cfg.saida, g))
+        if (sol.salvar(cfg.saida))
             std::cout << "Solucao gravada em: " << cfg.saida << "\n";
         else
             std::cerr << "Falha ao gravar a solucao em: " << cfg.saida << "\n";

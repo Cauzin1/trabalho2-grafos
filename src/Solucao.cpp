@@ -50,11 +50,10 @@ void Solucao::imprimirArestas(std::ostream& os) const {
         if (v != raiz) os << paiDe[v] << " " << v << "\n";
 }
 
-bool Solucao::salvar(const std::string& caminho, const Grafo& g) const {
+// Grava apenas as arestas u v (colar direto no csacademy).
+bool Solucao::salvar(const std::string& caminho) const {
     std::ofstream out(caminho);
     if (!out) return false;
-    imprimir(out, g);
-    out << "\nLista de arestas (csacademy):\n";
     imprimirArestas(out);
     return true;
 }
