@@ -192,6 +192,8 @@ int main(int argc, char** argv) {
 
     std::cout << "-----------------------------------------\n";
     sol.imprimir(std::cout, g);
+    std::cout << "\n--- CSAcademy (copie e cole) ---\n";
+    sol.imprimirArestas(std::cout);
     if (melhorAlpha >= 0.0)
         std::cout << "Melhor alpha...: " << melhorAlpha << "\n";
     std::cout << "Tempo (s)......: " << std::fixed << std::setprecision(3)

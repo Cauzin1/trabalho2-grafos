@@ -1,0 +1,425 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[brazil]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{xcolor}
+\usepackage{subcaption}
+\usepackage{tikz,tikz-3dplot}
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
+
+\geometry{a4paper, margin=2.5cm}
+\setlength{\parskip}{0.3\baselineskip}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=black
+}
+
+%=======================================================
+%  INDIQUE AQUI O NOME DO PROBLEMA E A EQUIPE
+%=======================================================
+\title{Universidade Federal de Juiz de Fora \\
+        DCC059 - Teoria dos Grafos \\
+        \vspace{6.0cm}
+        {\Huge\textbf{Árvore Geradora Mínima\\
+                      Capacitada (CMSTP)}}\\
+        \vspace{6.0cm}
+}
+\author{
+    Thomás Causin \\
+    Caio Cunha \\
+    Igor Reis \\
+}
+\date{Julho de 2026}
+
+%=======================================================
+%=======================================================
+\begin{document}
+
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+%=======================================================
+%                 I N T R O D U Ç Ã O
+%=======================================================
+\section{Introdução}
+
+O presente relatório descreve o projeto de implementação desenvolvido para o \textit{Capacitated Minimum Spanning Tree Problem} (CMSTP), o Problema da Árvore Geradora Mínima Capacitada. O trabalho insere-se no contexto da disciplina de Teoria dos Grafos, onde foram estudados algoritmos exatos para problemas clássicos — como Prim e Kruskal para árvores geradoras mínimas. O CMSTP é uma generalização do problema de árvore geradora mínima que, ao acrescentar uma restrição de capacidade sobre as sub-árvores, torna-se NP-difícil \cite{garey1979}, inviabilizando o uso direto desses algoritmos exatos em instâncias de porte médio e grande.
+
+Foram desenvolvidos três algoritmos construtivos baseados na heurística de Esau--Williams \cite{esauwilliams1966}: um algoritmo guloso determinístico, um algoritmo guloso randomizado (GRASP \cite{feo1995}) e um algoritmo guloso randomizado reativo \cite{prais2000}. Esses algoritmos foram avaliados sobre instâncias clássicas da OR-Library \cite{beasley1990} e os resultados foram comparados com as melhores soluções conhecidas da literatura \cite{ruiz2015}.
+
+O restante do trabalho está assim estruturado: na Seção~\ref{secProblema} o problema é descrito formalmente; a Seção~\ref{secAlgoritmos} detalha as abordagens propostas; a Seção~\ref{secResultados} apresenta os experimentos computacionais e a análise dos resultados; por fim, a Seção~\ref{secConclusoes} traz as conclusões e propostas de trabalhos futuros.
+
+
+%=======================================================
+%     D E S C R I Ç Ã O     D O    P R O B L E M A
+%=======================================================
+\section{Descrição do Problema}
+\label{secProblema}
+
+\subsection{Motivação e modelagem em grafos}
+
+O CMSTP modela um cenário recorrente em redes de telecomunicações: dado um \textbf{concentrador central} (a raiz) e um conjunto de \textbf{terminais} (os demais vértices), deseja-se interligá-los em uma árvore de custo mínimo, respeitando a restrição de que cada ``cabo'' que sai diretamente do concentrador não pode transportar mais do que $Q$ unidades de tráfego.
+
+Formalmente, dado um grafo não-direcionado completo $G = (V, E)$, onde:
+\begin{itemize}[noitemsep]
+    \item $r \in V$ é o vértice raiz (concentrador), com $|V| = n$;
+    \item $c_{ij} \geq 0$ é o custo da aresta entre os vértices $i$ e $j$;
+    \item $d_i > 0$ é a demanda do terminal $i$ (com $d_r = 0$);
+    \item $Q > 0$ é a capacidade máxima de cada sub-árvore,
+\end{itemize}
+o objetivo é encontrar uma \textbf{árvore geradora enraizada em $r$} de custo mínimo tal que, ao remover a raiz, cada sub-árvore resultante (denominada \textit{s-tree}) tenha soma de demandas no máximo $Q$:
+
+\begin{eqnarray}
+    \min \sum_{e \in E_T} c_e && \label{func_obj} \\
+    \text{sujeito a} \quad \sum_{i \in S} d_i \leq Q, && \forall\; \text{s-tree}\; S. \label{restricao_cap}
+\end{eqnarray}
+
+A função objetivo~(\ref{func_obj}) minimiza o custo total das arestas da árvore. A restrição~(\ref{restricao_cap}) impõe que a soma das demandas dos terminais de cada s-tree não exceda a capacidade $Q$.
+
+A Figura~\ref{fig:instancia_solucao} ilustra uma instância com 4 terminais e uma solução com duas s-trees.
+
+\begin{figure}[ht!]
+  \label{fig:instancia_solucao}
+  \centering
+
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \resizebox{0.95\textwidth}{!}{
+    \input{img/grafo1}
+    }
+    \caption{Instância CMSTP: raiz \textbf{0} (retângulo), terminais 1--4 (círculos), $Q = 3$, demandas unitárias.}
+    \label{fig:instancia}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \resizebox{0.95\textwidth}{!}{
+    \input{img/grafo3}
+    }
+    \caption{Solução Esau--Williams: s-tree $\{1,2\}$ e s-tree $\{3,4\}$, cada uma com demanda $2 \leq Q$.}
+    \label{fig:solucao}
+  \end{subfigure}
+
+  \caption{Instância e solução do exemplo CMSTP ($n=5$, $Q=3$).}
+\end{figure}
+
+\subsection{Complexidade e necessidade de heurísticas}
+
+A AGM sem restrições é resolvida em tempo polinomial pelos algoritmos de Kruskal \cite{kruskal1956} e Prim. Porém, ao acrescentar a restrição de capacidade~(\ref{restricao_cap}), o CMSTP torna-se NP-difícil por redução ao Problema da Mochila \cite{garey1979}. Isso significa que, salvo $P=NP$, não existe algoritmo eficiente capaz de garantir a solução ótima para instâncias grandes, o que justifica o uso de heurísticas.
+
+\subsection{Por que o Kruskal não resolve o CMSTP?}
+
+Uma pergunta natural é: não bastaria aplicar o algoritmo de Kruskal \cite{kruskal1956} e depois verificar a capacidade? A resposta é não, por dois motivos fundamentais:
+
+\textbf{(1) Kruskal não tem consciência da raiz.} O algoritmo de Kruskal seleciona arestas apenas pelo menor custo, sem nenhuma noção de qual vértice é a raiz nem de quais sub-árvores se formam ao redor dela. Para o Kruskal, a aresta $(3, 7)$ é tão boa quanto a aresta $(0, 5)$ --- o único critério é o custo. O CMSTP, porém, exige que a capacidade seja respeitada por \emph{sub-árvores enraizadas em $r$}, o que requer que o algoritmo saiba a posição da raiz a todo instante.
+
+\textbf{(2) A AGM gerada pelo Kruskal quase sempre viola a capacidade.} A AGM ótima sem restrições frequentemente agrupa muitos terminais de alta demanda em um mesmo ramo, pois isso é mais barato em termos de arestas. Ao verificar a restrição $\sum_{i \in S} d_i \leq Q$ sobre essa árvore, muitos ramos a violam. Corrigir a violação exigiria cortar ramos e reconectá-los à raiz, aumentando o custo e resolvendo, na prática, um novo problema combinatório.
+
+Precisamos, portanto, de um algoritmo que: (a) saiba quem é a raiz; (b) controle a demanda por componente durante a construção; e (c) meça a vantagem de uma fusão \emph{em relação ao custo de conexão com a raiz}. É exatamente isso que a heurística de Esau--Williams faz.
+
+
+%=======================================================
+%                 A L G O R I T M O S
+%=======================================================
+\section{Algoritmos Implementados}
+\label{secAlgoritmos}
+
+Nesta seção são detalhados os três algoritmos propostos. Todos compartilham o mesmo mecanismo de construção baseado na heurística de Esau--Williams; o que os diferencia é a estratégia de seleção do candidato a ser fundido.
+
+\subsection{Representação da solução}
+
+A solução é representada por um \textbf{vetor de pais}: \texttt{pai[v]} é o predecessor de $v$ no caminho até a raiz. Essa estrutura garante que o resultado seja sempre uma árvore (cada vértice tem exatamente um pai) e facilita o cálculo do custo total ($\sum_v c(v, \texttt{pai}[v])$) e a verificação de viabilidade (subindo de cada terminal até sua sub-raiz e acumulando a demanda por s-tree).
+
+\subsection{Algoritmo Guloso}
+\label{subSecAlgGuloso}
+
+O algoritmo guloso implementa a heurística de Esau--Williams de forma determinística. A ideia central é partir de uma solução cara (todos os terminais ligados diretamente à raiz) e ir \textbf{economizando} iterativamente: a cada passo, funde-se a par de componentes que oferece a maior \textbf{economia}, entendida como a diferença entre o custo do \emph{portão} (gate) da componente --- a aresta mais barata conectando a componente à raiz --- e o custo da aresta interna que une as duas componentes. A fusão só é realizada se a demanda total resultante não ultrapassar $Q$.
+
+A relação com o Kruskal fica clara na estrutura de dados: ambos utilizam \textit{union-find} para rastrear e fundir componentes. A diferença é que Kruskal seleciona pelo menor custo de aresta, enquanto Esau--Williams seleciona pela maior economia relativa ao portão, respeitando a restrição de capacidade.
+
+O Algoritmo~\ref{algGuloso} descreve a construção. Na linha~1, cada terminal é inicializado como sua própria componente, com portão igual à aresta direta para a raiz. Nas linhas~4--10, para cada terminal~$i$ busca-se o terminal~$j$ mais próximo em outra componente cuja fusão não viole~$Q$; a economia de fundir $C_i$ com $C_j$ pela aresta $(i,j)$ é calculada na linha~9. Nas linhas~11--12, escolhe-se o par de maior economia positiva; se não houver, o algoritmo termina. As linhas~13--15 realizam a fusão e atualizam o portão da nova componente. Ao final (linhas~17--18), cada componente conecta-se à raiz pelo seu portão e uma BFS orienta a árvore.
+
+\begin{algorithm}[H]
+\caption{Esau--Williams Guloso}
+\label{algGuloso}
+\KwIn{Grafo $G=(V,E)$, raiz $r$, capacidade $Q$}
+\KwOut{Árvore geradora $T$ enraizada em $r$ com demanda $\leq Q$ por s-tree}
+
+\ForEach{$v \in V \setminus \{r\}$}{
+    $\text{comp}[v] \leftarrow v$;\quad $\text{dem}[v] \leftarrow d_v$;\quad $\text{gate}[v] \leftarrow c(r,v)$\;
+}
+\Repeat{\textnormal{nenhum candidato com economia $> 0$}}{
+    candidatos $\leftarrow \emptyset$\;
+    \ForEach{$i \in V \setminus \{r\}$}{
+        $c_i \leftarrow \text{find}(i)$\;
+        $j^* \leftarrow \arg\min_{j:\,\text{find}(j)\neq c_i,\;\text{dem}[c_i]+\text{dem}[\text{find}(j)]\leq Q} c(i,j)$\;
+        \If{$j^*$ existe}{
+            $\text{economia}(i) \leftarrow \text{gate}[c_i] - c(i,j^*)$\;
+            \If{$\text{economia}(i) > 0$}{
+                adiciona $(i,j^*,\text{economia}(i))$ a candidatos\;
+            }
+        }
+    }
+    \If{\textnormal{candidatos} $= \emptyset$}{\textbf{break}\;}
+    $(i^*, j^*) \leftarrow$ par com maior economia em candidatos\;
+    adiciona aresta $(i^*,j^*)$ a $T$\;
+    $c_i \leftarrow \text{find}(i^*)$;\quad $c_j \leftarrow \text{find}(j^*)$\;
+    $\text{union}(c_i, c_j)$;\quad $\text{dem}[\cdot] \leftarrow \text{dem}[c_i]+\text{dem}[c_j]$\;
+    $\text{gate}[\cdot] \leftarrow \min(\text{gate}[c_i], \text{gate}[c_j])$\;
+}
+\ForEach{\textnormal{componente } $C$}{
+    adiciona aresta $(\text{gate\_node}[C],\, r)$ a $T$\;
+}
+Orienta $T$ por BFS a partir de $r$ (preenche vetor de pais)\;
+\Return{$T$}
+\end{algorithm}
+
+Por ser determinístico, o algoritmo guloso sempre produz a mesma solução para uma dada instância e valor de $Q$, servindo como \textit{baseline} de comparação.
+
+\subsection{Algoritmo Guloso Randomizado}
+\label{subSecAlgRand}
+
+A principal limitação do algoritmo guloso é sua natureza determinística: ao escolher sempre o melhor candidato, ele pode convergir para um mínimo local e ignorar outras regiões do espaço de soluções que poderiam produzir árvores de menor custo. Para superar essa limitação, adotou-se a metaheurística GRASP (\textit{Greedy Randomized Adaptive Search Procedure}) \cite{feo1995}.
+
+Em vez de selecionar sempre o candidato de maior economia, o algoritmo constrói a \textbf{Lista Restrita de Candidatos (RCL)}, composta por todos os pares cuja economia esteja dentro de um limiar controlado pelo parâmetro $\alpha \in [0,1]$:
+
+\begin{equation}
+    \text{RCL} = \big\{\, i : \text{economia}(i) \geq e_{\max} - \alpha \cdot (e_{\max} - e_{\min}) \,\big\},
+\end{equation}
+
+e sorteia uniformemente um candidato da RCL. Quando $\alpha = 0$, apenas o melhor candidato integra a RCL e o algoritmo recai no guloso puro; quando $\alpha = 1$, todos os candidatos são elegíveis e a escolha é totalmente aleatória. Valores intermediários equilibram a intensificação (explorar a vizinhança da melhor solução) e a diversificação (explorar novas regiões). Foram testados os valores $\alpha \in \{0{,}1;\; 0{,}2;\; 0{,}3\}$.
+
+A construção é repetida \texttt{iteracoes} vezes (mínimo 30, conforme a especificação) e a melhor solução encontrada é retornada, conforme o Algoritmo~\ref{algRand}.
+
+\begin{algorithm}[H]
+\caption{Esau--Williams Guloso Randomizado (GRASP)}
+\label{algRand}
+\KwIn{Grafo $G$, raiz $r$, capacidade $Q$, parâmetros $\alpha$ e \textit{iter}}
+\KwOut{Melhor árvore $T^*$ encontrada nas \textit{iter} construções}
+
+$T^* \leftarrow \emptyset$;\quad $c^* \leftarrow +\infty$\;
+\For{$t \leftarrow 1$ \KwTo \textit{iter}}{
+    $T \leftarrow$ \textsc{ConstruçãoRCL}$(G, r, Q, \alpha)$ \tcp*{usa RCL em vez do melhor}
+    \If{$\text{custo}(T) < c^*$}{
+        $T^* \leftarrow T$;\quad $c^* \leftarrow \text{custo}(T)$\;
+    }
+}
+\Return{$T^*$}
+\end{algorithm}
+
+\subsection{Algoritmo Guloso Randomizado Reativo}
+\label{subSecAlgRandReact}
+
+A escolha do parâmetro $\alpha$ no algoritmo randomizado é crítica: um $\alpha$ muito pequeno limita a diversificação, enquanto um $\alpha$ muito grande prejudica a qualidade das soluções. O algoritmo randomizado reativo \cite{prais2000} elimina essa necessidade de ajuste manual ao \textbf{aprender} automaticamente quais valores de $\alpha$ funcionam melhor para cada instância.
+
+O algoritmo mantém um conjunto de $m$ valores $\{\alpha_1, \ldots, \alpha_m\}$, cada um com uma probabilidade $p_k$ de ser sorteado. As probabilidades são atualizadas a cada \textbf{bloco} de iterações (tamanho 30--50) pela regra de Prais \& Ribeiro:
+
+\begin{equation}
+    q_k = \left(\frac{c^*}{\bar{c}_k}\right)^{\delta}, \qquad p_k = \frac{q_k}{\displaystyle\sum_{j=1}^{m} q_j},
+\end{equation}
+
+onde $c^*$ é o melhor custo encontrado até o momento, $\bar{c}_k$ é o custo médio das soluções geradas com $\alpha_k$ e $\delta = 10$ é o parâmetro de sensibilidade. Como $\bar{c}_k \geq c^*$, a razão $c^*/\bar{c}_k \in (0,1]$: valores de $\alpha$ que geram soluções de custo médio próximo ao melhor ganham peso maior, enquanto os de pior desempenho são penalizados --- mas não eliminados, para preservar a diversificação.
+
+Foram utilizados os valores $\alpha \in \{0{,}05;\; 0{,}10;\; 0{,}15;\; 0{,}20;\; 0{,}30;\; 0{,}50\}$, com 300 iterações e blocos de 30 iterações, conforme a especificação do trabalho. O Algoritmo~\ref{algReativo} descreve o mecanismo reativo e a Figura~\ref{fig:fluxograma} apresenta o fluxo completo.
+
+\begin{algorithm}[H]
+\caption{Esau--Williams Guloso Randomizado Reativo}
+\label{algReativo}
+\KwIn{Grafo $G$, raiz $r$, capacidade $Q$, conjunto $\{\alpha_1,\ldots,\alpha_m\}$, parâmetros \textit{iter} e \textit{bloco}}
+\KwOut{Melhor árvore $T^*$ e melhor $\alpha$ encontrado}
+
+$p_k \leftarrow 1/m$ para todo $k$;\quad $T^* \leftarrow \emptyset$;\quad $c^* \leftarrow +\infty$\;
+\For{$t \leftarrow 1$ \KwTo \textit{iter}}{
+    Sorteia índice $k$ conforme a distribuição $\{p_k\}$\;
+    $T \leftarrow$ \textsc{ConstruçãoRCL}$(G, r, Q, \alpha_k)$\;
+    Registra custo $c(T)$ para $\alpha_k$\;
+    \If{$c(T) < c^*$}{$T^* \leftarrow T$;\quad $c^* \leftarrow c(T)$;\quad $\alpha^* \leftarrow \alpha_k$\;}
+    \If{$t \bmod \textit{bloco} = 0$}{
+        \ForEach{$k$}{
+            $q_k \leftarrow (c^*/\bar{c}_k)^{\delta}$ \tcp*{$\bar{c}_k$: custo médio de $\alpha_k$}
+        }
+        $p_k \leftarrow q_k / \sum_j q_j$ para todo $k$\;
+    }
+}
+\Return{$T^*$, $\alpha^*$}
+\end{algorithm}
+
+\begin{figure}[ht]
+\centering
+\resizebox{0.55\textwidth}{!}{
+    \input{img/diagramaFluxo}
+}
+\caption{Fluxograma do algoritmo guloso randomizado reativo.}
+\label{fig:fluxograma}
+\end{figure}
+
+
+%=======================================================
+%              E X P E R I M E N T O S
+%=======================================================
+\section{Experimentos computacionais}
+\label{secResultados}
+
+\subsection{Descrição das instâncias}
+\label{subSecInstancias}
+
+As instâncias utilizadas provêm da OR-Library \cite{beasley1990}, conjunto de referência amplamente utilizado na literatura do CMSTP. Utilizamos dois arquivos: \texttt{capmst1.txt} (grupos \texttt{tc80} e \texttt{te80}) e \texttt{capmst2.txt} (grupos \texttt{cm50}, \texttt{cm100} e \texttt{cm200}), lidos diretamente no formato nativo da OR-Library. Cada grupo contém 5 instâncias, totalizando 75 configurações distintas (5 grupos $\times$ 5 instâncias $\times$ 3 valores de $Q$).
+
+\begin{table}[!h]
+\centering
+\caption{Grupos de instâncias utilizados nos experimentos}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\multicolumn{1}{|c|}{\textbf{Grupo}} & \textbf{Terminais} & \textbf{Demandas} & \textbf{Capacidades $Q$} & \textbf{Instâncias} \\ \hline
+\texttt{tc80}  & 80 & Unitárias      & 5, 10, 20       & \texttt{tc80-1.txt} a \texttt{tc80-5.txt}   \\ \hline
+\texttt{te80}  & 80 & Unitárias      & 5, 10, 20       & \texttt{te80-1.txt} a \texttt{te80-5.txt}   \\ \hline
+\texttt{cm50}  & 50 & Não unitárias  & 200, 400, 800   & \texttt{cm50r1.dat} a \texttt{cm50r5.dat}   \\ \hline
+\texttt{cm100} & 100 & Não unitárias & 200, 400, 800   & \texttt{cm100r1.dat} a \texttt{cm100r5.dat} \\ \hline
+\texttt{cm200} & 200 & Não unitárias & 200, 400, 800   & \texttt{cm200r1.dat} a \texttt{cm200r5.dat} \\ \hline
+\end{tabular}
+\label{tabInstancias}
+\end{table}
+
+Os grupos \texttt{tc80} e \texttt{te80} possuem demandas unitárias ($d_i = 1$ para todo terminal), enquanto os grupos \texttt{cm} possuem demandas variáveis lidas do bloco \texttt{priz} do arquivo OR-Library. A capacidade $Q$ não está nos arquivos de instância; é passada como parâmetro de linha de comando, pois na literatura o mesmo grafo é testado com diferentes valores de $Q$.
+
+\subsection{Ambiente computacional e parâmetros}
+\label{subSecAmbiente}
+
+O código foi implementado em C++ (padrão C++17) e compilado com \texttt{g++} com otimização \texttt{-O2}. Os experimentos foram executados em ambiente Linux. O gerador de números pseudoaleatórios utilizado é o Mersenne Twister (\texttt{std::mt19937}), com semente inicial baseada no relógio de alta resolução, impressa ao início de cada execução para permitir reprodutibilidade.
+
+Cada algoritmo foi executado \textbf{10 vezes} por instância, com sementes de 1 a 10. Os parâmetros adotados foram:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Guloso:} determinístico, uma única execução por instância.
+    \item \textbf{Randomizado:} $\alpha \in \{0{,}1;\; 0{,}2;\; 0{,}3\}$; mínimo de \textbf{30 construções} por execução.
+    \item \textbf{Reativo:} $\alpha \in \{0{,}05;\; 0{,}10;\; 0{,}15;\; 0{,}20;\; 0{,}30;\; 0{,}50\}$; \textbf{300 construções} por execução; blocos de \textbf{30 iterações}.
+\end{itemize}
+
+\subsection{Resultados obtidos}
+\label{subSecResultados}
+
+O desvio percentual de cada resultado em relação à melhor solução conhecida da literatura \cite{ruiz2015} é calculado como:
+\begin{equation}
+    \text{desvio}(\%) = \frac{c_{\text{heurística}} - c^*}{c^*} \times 100.
+\end{equation}
+
+A Tabela~\ref{tabResultMelhor} apresenta o desvio percentual da \textbf{melhor} solução obtida (nas 10 execuções para os algoritmos randomizados) para cada grupo de instâncias. As células em negrito indicam o melhor resultado por linha.
+
+\begin{table}[htbp]
+\centering
+\caption{Desvio percentual médio da \textbf{melhor} solução alcançada por cada algoritmo em relação à melhor solução conhecida, por grupo de instâncias}
+\renewcommand{\arraystretch}{1.2}
+{
+\footnotesize
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\textbf{Grupo} & \textbf{Melhor} & \textbf{Guloso} & \multicolumn{3}{c|}{\textbf{Randomizado}} & \textbf{Reativo} \\ \cline{4-6}
+ & \textbf{conhecida} & & \multicolumn{1}{c|}{\textbf{0,10}} & \multicolumn{1}{c|}{\textbf{0,20}} & \multicolumn{1}{c|}{\textbf{0,30}} & \\
+\hline
+tc80  & -- &  &  &  &  &  \\
+te80  & -- &  &  &  &  &  \\
+cm50  & -- &  &  &  &  &  \\
+cm100 & -- &  &  &  &  &  \\
+cm200 & -- &  &  &  &  &  \\
+\hline
+\textbf{Média} &  &  &  &  &  &  \\
+\hline
+\end{tabular}
+}
+\label{tabResultMelhor}
+\end{table}
+
+A Tabela~\ref{tabResultMedia} apresenta o desvio percentual da \textbf{média} das 10 execuções de cada algoritmo, medida que reflete a consistência do método ao longo de múltiplas execuções com sementes diferentes.
+
+\begin{table}[htbp]
+\centering
+\caption{Desvio percentual médio da \textbf{média das 10 execuções} de cada algoritmo em relação à melhor solução conhecida, por grupo de instâncias}
+\renewcommand{\arraystretch}{1.2}
+{
+\footnotesize
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+\textbf{Grupo} & \textbf{Melhor} & \textbf{Guloso} & \multicolumn{3}{c|}{\textbf{Randomizado}} & \textbf{Reativo} \\ \cline{4-6}
+ & \textbf{conhecida} & & \multicolumn{1}{c|}{\textbf{0,10}} & \multicolumn{1}{c|}{\textbf{0,20}} & \multicolumn{1}{c|}{\textbf{0,30}} & \\
+\hline
+tc80  & -- &  &  &  &  &  \\
+te80  & -- &  &  &  &  &  \\
+cm50  & -- &  &  &  &  &  \\
+cm100 & -- &  &  &  &  &  \\
+cm200 & -- &  &  &  &  &  \\
+\hline
+\textbf{Média} &  &  &  &  &  &  \\
+\hline
+\end{tabular}
+}
+\label{tabResultMedia}
+\end{table}
+
+A Tabela~\ref{tabResultTempo} apresenta o tempo médio de execução (em segundos) de cada algoritmo por grupo de instâncias.
+
+\begin{table}[htbp]
+\centering
+\caption{Tempo médio de execução de cada algoritmo (em segundos), por grupo de instâncias}
+\renewcommand{\arraystretch}{1.2}
+{
+\footnotesize
+\begin{tabular}{|c|c|c|c|c|c|}
+\hline
+\textbf{Grupo} & \textbf{Guloso} & \multicolumn{3}{c|}{\textbf{Randomizado}} & \textbf{Reativo} \\ \cline{3-5}
+ & & \multicolumn{1}{c|}{\textbf{0,10}} & \multicolumn{1}{c|}{\textbf{0,20}} & \multicolumn{1}{c|}{\textbf{0,30}} & \\
+\hline
+tc80  &  &  &  &  &  \\
+te80  &  &  &  &  &  \\
+cm50  &  &  &  &  &  \\
+cm100 &  &  &  &  &  \\
+cm200 &  &  &  &  &  \\
+\hline
+\textbf{Média} &  &  &  &  &  \\
+\hline
+\end{tabular}
+}
+\label{tabResultTempo}
+\end{table}
+
+\colorbox{pink}{
+\begin{minipage}[c]{13cm}
+[\textbf{Nota}:] As tabelas acima devem ser preenchidas com os resultados reais após a execução do script \texttt{scripts/experimentos.py}. A análise deve destacar quais algoritmos foram melhores, se o tamanho da instância ou o valor de $Q$ influencia os resultados, e comparar o comportamento do reativo com os alphas fixos.
+\end{minipage}}
+
+
+%=======================================================
+%                 C O N C L U S Õ E S
+%=======================================================
+\section{Conclusões}
+\label{secConclusoes}
+
+Neste trabalho, implementamos três heurísticas construtivas para o CMSTP: um algoritmo guloso determinístico, um guloso randomizado (GRASP) e um guloso randomizado reativo. Todos os três compartilham o mecanismo de construção de Esau--Williams, heurística clássica do problema que parte de uma solução cara (todos os terminais conectados diretamente à raiz) e vai realizando fusões de componentes com base no conceito de \textbf{economia}, sempre respeitando a restrição de capacidade.
+
+A escolha do Esau--Williams em detrimento de uma adaptação direta do Kruskal é justificada por razões fundamentais: o Kruskal não distingue a raiz dos demais vértices, não mantém controle de demanda por componente e pode gerar soluções completamente inviáveis. O Esau--Williams, por sua vez, foi projetado especificamente para o CMSTP, garantindo viabilidade por construção. Apesar de ambos utilizarem \textit{union-find}, seus critérios de seleção são essencialmente diferentes: menor custo de aresta (Kruskal) versus maior economia relativa ao portão da componente (Esau--Williams).
+
+Entre as principais dificuldades encontradas destacam-se a leitura do formato nativo da OR-Library (que embute múltiplas instâncias em um único arquivo e remapeia o depósito para o último nó) e a calibração do parâmetro $\alpha$ do GRASP, motivação direta para a implementação do algoritmo reativo.
+
+Como trabalhos futuros, a adição de uma fase de \textbf{busca local} após a construção --- por exemplo, mover um terminal de uma s-tree para outra quando isso reduzir o custo sem violar $Q$ (\textit{node insertion}) --- poderia reduzir significativamente o gap em relação às melhores soluções conhecidas.
+
+
+%=======================================================
+%             R E F E R Ê N C I A S
+%=======================================================
+\bibliographystyle{plain}
+\bibliography{bibliografia}
+
+\end{document}
