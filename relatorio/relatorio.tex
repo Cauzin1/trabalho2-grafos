@@ -63,7 +63,7 @@
     \vspace{3cm}
 
     {\large
-        Thomás Causin\\
+        Thomás Sousa Causin Alves - 201835040\\
         Caio Cunha\\
         Igor Reis
     }
@@ -82,7 +82,7 @@
 
 Este relatório descreve a solução desenvolvida para o \textit{Capacitated Minimum Spanning Tree Problem} (CMSTP), o problema da Árvore Geradora Mínima Capacitada. O trabalho insere-se no contexto da disciplina de Teoria dos Grafos, onde foram estudados
 algoritmos exatos para problemas clássicos, como o de Prim e de Kruskal para árvores geradoras mínimas. O CMSTP é uma generalização desse problema que, ao acrescentar uma restrição de capacidade sobre as sub-árvores, torna-se NP-difícil \cite{garey1979}, inviabilizando o uso direto desses algoritmos.
-A abordagem adotada é a heurística construtiva de Esau--Williams \cite{esauwilliams1966}, que usa semelhanças estruturais com o algoritmo de Kruskal \cite{kruskal1956}: ambos utilizam \textit{union-find} para rastrear e fundir componentes ao longo da execução. A diferença fundamental, porém, é que Kruskal seleciona sempre a aresta de menor custo sem nenhuma noção de raiz ou capacidade, o que pode gerar soluções completamente inviáveis para o CMSTP. O Esau--Williams, por sua vez, seleciona fusões com base na \textbf{economia} gerada em relação ao custo de conexão com a raiz, verificando a cada passo se a restrição de capacidade é respeitada, garantindo viabilidade por construção.
+A abordagem adotada é a heurística construtiva de Esau-Williams \cite{esauwilliams1966}, que usa semelhanças estruturais com o algoritmo de Kruskal \cite{kruskal1956}: ambos utilizam \textit{union-find} para rastrear e fundir componentes ao longo da execução. A diferença fundamental, porém, é que Kruskal seleciona sempre a aresta de menor custo sem nenhuma noção de raiz ou capacidade, o que pode gerar soluções completamente inviáveis para o CMSTP. O Esau-Williams, por sua vez, seleciona fusões com base na \textbf{economia} gerada em relação ao custo de conexão com a raiz, verificando a cada passo se a restrição de capacidade é respeitada, garantindo viabilidade por construção.
 O objetivo central do trabalho é encontrar, de forma eficiente, uma árvore geradora de custo mínimo que respeite restrições de capacidade em cada sub-árvore, uma generalização do problema clássico de árvore geradora mínima que torna o problema NP-difícil, justificando o uso de heurísticas.
 
 % =========================================================================
@@ -199,7 +199,7 @@ Precisamos de um algoritmo que:
     \item \textbf{Tome decisões baseadas na economia relativa à raiz},  a pergunta não é ``qual aresta é mais barata?'', mas sim ``quanto eu economizo ao unir dois grupos, comparado a manter cada um ligado diretamente à raiz?''
 \end{enumerate}
 
-É exatamente isso que a heurística de \textbf{Esau--Williams} faz na prática.
+É exatamente isso que a heurística de \textbf{Esau-Williams} faz na prática.
 
 % =========================================================================
 \section{A Heurística de Esau-Williams}
@@ -219,7 +219,7 @@ O ponto-chave é o conceito de \textbf{portão (gate)}: cada componente tem um `
 \subsection{Algoritmo passo a passo}
 
 \begin{algorithm}[H]
-\caption{Esau--Williams (construção gulosa)}
+\caption{Esau-Williams (construção gulosa)}
 \label{alg:esau_williams}
 \begin{algorithmic}[1]
 \Require Grafo $G$, raiz $r$, capacidade $Q$
@@ -338,6 +338,13 @@ Ao fundir duas componentes $C_i$ e $C_j$:
 \]
 
 Ao final da construção, uma BFS a partir da raiz orienta todas as arestas e preenche o vetor de pais.
+
+\subsection{Repositório}
+
+O código-fonte completo está disponível publicamente em:
+\begin{center}
+    \url{https://github.com/Cauzin1/trabalho2-grafos}
+\end{center}
 
 % =========================================================================
 \section{Os Três Algoritmos}
@@ -510,9 +517,9 @@ Quanto ao tempo de execução (Tabela~3), o guloso é praticamente instantâneo 
 
 Neste trabalho, implementamos três heurísticas construtivas para o CMSTP: um algoritmo guloso determinístico, um guloso randomizado (GRASP) e um guloso randomizado reativo. Todos os três têm como núcleo a heurística de Esau-Williams, que foi escolhida por ser a abordagem clássica e mais adequada ao problema.
 
-A escolha do Esau--Williams em detrimento do Kruskal se justifica por razões fundamentais: o Kruskal não sabe quem é a raiz, não controla a demanda por sub-árvore e pode gerar soluções completamente inviáveis. O Esau--Williams, por sua vez, foi projetado especificamente para o CMSTP, garantindo viabilidade por construção ao verificar a capacidade a cada fusão e medir a economia relativa ao custo de conexão com a raiz.
+A escolha do Esau-Williams em detrimento do Kruskal se justifica por razões fundamentais: o Kruskal não sabe quem é a raiz, não controla a demanda por sub-árvore e pode gerar soluções completamente inviáveis. O Esau-Williams, por sua vez, foi projetado especificamente para o CMSTP, garantindo viabilidade por construção ao verificar a capacidade a cada fusão e medir a economia relativa ao custo de conexão com a raiz.
 
-Os experimentos confirmaram que o GRASP reativo é o algoritmo de melhor desempenho em todos os grupos testados, com desvio médio de 7,34\% em relação às melhores soluções conhecidas, contra 12,57\% do guloso. O resultado mais expressivo foi nas instâncias \texttt{te80}, onde alphas fixos de $0{,}2$ e $0{,}3$ chegaram a produzir soluções piores que o próprio guloso --- e o reativo, ao aprender quais alphas funcionam melhor, contornou esse problema automaticamente. O guloso, apesar de inferior em qualidade, continua relevante como linha de base rápida, o que já era de se esperar (menos de 0,01~s em todos os grupos).
+Os experimentos confirmaram que o GRASP reativo é o algoritmo de melhor desempenho em todos os grupos testados, com desvio médio de 7,34\% em relação às melhores soluções conhecidas, contra 12,57\% do guloso. O resultado mais expressivo foi nas instâncias \texttt{te80}, onde alphas fixos de $0{,}2$ e $0{,}3$ chegaram a produzir soluções piores que o próprio guloso, e o reativo ao aprender quais alphas funcionam melhor, contornou esse problema automaticamente. O guloso, apesar de inferior em qualidade, continua relevante como linha de base rápida, o que já era de se esperar (menos de 0,01~s em todos os grupos).
 
 Os gaps maiores nos grupos \texttt{cm100} e \texttt{cm200} (12--26\%) indicam que instâncias com demandas não unitárias e maior número de vértices são mais difíceis para abordagens puramente construtivas. Como trabalho futuro, a adição de uma busca local simples, como \textit{node insertion} (mover um terminal de uma s-tree para outra quando isso reduz o custo sem violar $Q$), poderia reduzir esses gaps de forma significativa, especialmente nessas instâncias maiores.
 
